@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title> H5 - عشقيي</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{
+      background:#000;
+      overflow:hidden;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    canvas{display:block;position:fixed;inset:0}
+    #center-letter{
+      position:fixed;
+      left:50%;
+      top:50%;
+      transform:translate(-50%,-50%);
+      font-size:120px;
+      font-weight:800;
+      color:#ffd27a;
+      text-shadow: 0 0 12px rgba(255,210,122,0.6);
+      pointer-events:none;
+      user-select:none;
+      letter-spacing:8px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="pinkboard"></canvas>
+  <div id="center-letter">H</div>
+
+  <script>
+    // Simple working example: draw many small heart emojis around a heart shape
+    (function () {
+      const canvas = document.getElementById('pinkboard');
+      const ctx = canvas.getContext('2d');
+
+      let W = canvas.width = window.innerWidth;
+      let H = canvas.height = window.innerHeight;
+
+      window.addEventListener('resize', () => {
+        W = canvas.width = window.innerWidth;
+        H = canvas.height = window.innerHeight;
+      });
+
+      function heart(t) {
+        // parametric heart curve, scaled smaller
+        const x = 16 * Math.pow(Math.sin(t), 3);
+        const y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+        return { x, y };
+      }
+
+      function Particle(t) {
+        this.t = t + (Math.random() - 0.5) * 0.1;
+        const p = heart(this.t);
+        this.baseX = p.x;
+        this.baseY = p.y;
+        this.size = 14 + Math.random() * 10;
+        this.offsetX = (Math.random() - 0.5) * 10;
+        this.offsetY = (Math.random() - 0.5) * 10;
+        this.vx = (Math.random() - 0.5) * 0.1;
+        this.vy = -0.02 + (Math.random() - 0.5) * 0.04;
+        this.alpha = 0.6 + Math.random() * 0.4;
+        this.speed = 0.001 + Math.random() * 0.004;
+        this.born = Date.now();
+      }
+
+      Particle.prototype.update = function (dt) {
+        this.t += this.speed * dt;
+        const p = heart(this.t);
+        this.baseX = p.x;
+        this.baseY = p.y;
+        this.offsetX += this.vx * dt * 0.001;
+        this.offsetY += this.vy * dt * 0.001;
+        this.alpha = 0.5 + 0.5 * Math.abs(Math.sin((Date.now() - this.born) / 400 + this.t * 3));
+      };
+
+      Particle.prototype.draw = function (ctx, cx, cy, scale) {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0.05, Math.min(1, this.alpha));
+        ctx.font = `${this.size}px serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        // draw two layers for depth
+        ctx.fillStyle = "rgba(255,145,180,0.95)";
+        ctx.fillText('❤', cx + this.baseX * scale + this.offsetX, cy - this.baseY * scale + this.offsetY);
+        ctx.restore();
+      };
+
+      const particles = [];
+      const COUNT = 360;
+      for (let i = 0; i < COUNT; i++) {
+        const t = (i / COUNT) * Math.PI * 2;
+        particles.push(new Particle(t));
+      }
+
+      let last = performance.now();
+      function animate(now) {
+        const dt = now - last;
+        last = now;
+
+        // faint trail
+        ctx.fillStyle = 'rgba(0,0,0,0.18)';
+        ctx.fillRect(0, 0, W, H);
+
+        const cx = W / 2;
+        const cy = H / 2 + 20;
+        const scale = Math.min(W, H) / 40;
+
+        for (let p of particles) {
+          p.update(dt);
+          p.draw(ctx, cx, cy, scale);
+        }
+
+        requestAnimationFrame(animate);
+      }
+
+      requestAnimationFrame(animate);
+    })();
+  </script>
+</body>
+</html>
